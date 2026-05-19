@@ -21,11 +21,11 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // const user = useAppSelector((state) => state.auth.user);
+  const user = useAppSelector((state) => state.auth.user);
 
-  //   useEffect(() => {
-  //     if (user) router.replace("/profile");
-  //   }, [user]);
+    useEffect(() => {
+      if (user) router.replace("/profile");
+    }, [user]);
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
