@@ -1,0 +1,279 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  /* Brand tokens */
+  --color-brand-black: #0a0a0a;
+  --color-brand-white: #fafafa;
+  --color-brand-surface: #f5f5f4;
+  --color-brand-border: #e5e5e5;
+  --color-brand-muted: #737373;
+  --color-brand-orange: #f97316;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #fafafa;
+  color: #0a0a0a;
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Fade-in-up — used on homepage sections */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.animate-delay-1 { animation-delay: 80ms; }
+.animate-delay-2 { animation-delay: 160ms; }
+.animate-delay-3 { animation-delay: 240ms; }
+.animate-delay-4 { animation-delay: 320ms; }
+
+/* Hero slider content animations */
+@keyframes heroLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes heroRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes heroFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-from-left {
+  animation: heroLeft 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-from-right {
+  animation: heroRight 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-fade {
+  animation: heroFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Order placed success overlay animations */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.3); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes drawCheck {
+  from { stroke-dashoffset: 36; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes rippleOut {
+  from { opacity: 0.55; transform: scale(0.85); }
+  to   { opacity: 0;    transform: scale(2.5); }
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+.animate-draw-check {
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: drawCheck 0.45s ease-out 0.3s both;
+}
+.animate-ripple-out {
+  animation: rippleOut 0.9s ease-out 0.1s both;
+}
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.4s ease-out both;
+}
+
+/* Animated underline — grows left→right on hover */
+.hover-line {
+  position: relative;
+}
+.hover-line::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.25s ease;
+}
+.hover-line:hover::after,
+.hover-line.active::after {
+  width: 100%;
+}
+
+
+/* ───────────────────────────────────────────── */
+/* Smooth scrolling */
+/* ───────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ───────────────────────────────────────────── */
+/* Fade Up Animation */
+/* ───────────────────────────────────────────── */
+
+.animate-fade-up {
+  opacity: 0;
+  transform: translateY(40px);
+  animation: fadeUp 0.9s ease forwards;
+}
+
+.animate-fade-left {
+  opacity: 0;
+  transform: translateX(-60px);
+  animation: fadeLeft 1s ease forwards;
+}
+
+.animate-fade-right {
+  opacity: 0;
+  transform: translateX(60px);
+  animation: fadeRight 1s ease forwards;
+}
+
+.animate-zoom {
+  opacity: 0;
+  transform: scale(0.92);
+  animation: zoomIn 1s ease forwards;
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* ───────────────────────────────────────────── */
+/* Delays */
+/* ───────────────────────────────────────────── */
+
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
+}
+
+.delay-4 {
+  animation-delay: 0.4s;
+}
+
+/* ───────────────────────────────────────────── */
+/* Hover Micro Interactions */
+/* ───────────────────────────────────────────── */
+
+.hover-lift {
+  transition:
+    transform 0.45s ease,
+    box-shadow 0.45s ease,
+    border-color 0.45s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
+}
+
+.image-hover {
+  transition:
+    transform 1s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.8s ease;
+}
+
+.group:hover .image-hover {
+  transform: scale(1.08);
+}
+
+.button-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transform: translateX(-120%);
+  transition: transform 0.8s ease;
+}
+
+.button-glow:hover::after {
+  transform: translateX(120%);
+}
+
+/* ───────────────────────────────────────────── */
+/* Keyframes */
+/* ───────────────────────────────────────────── */
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeLeft {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeRight {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes zoomIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
