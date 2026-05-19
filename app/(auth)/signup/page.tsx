@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api, { saveAccessToken } from "@/lib/api";
@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { SITE_NAME } from "@/lib/theme";
 import type { AppDispatch } from "@/store";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchCurrentUser } from "@/store/slices/authSlice";
 
 export default function SignUpPage() {
@@ -20,6 +20,12 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const user = useAppSelector((state) => state.auth.user);
+
+    useEffect(() => {
+      if (user) router.replace("/profile");
+    }, [user]);
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
