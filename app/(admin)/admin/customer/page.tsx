@@ -32,10 +32,10 @@ type CustomerOrder = {
   } | null;
   payment: {
     id: string;
-    amount?: number;
+    amount: number;
     status: PaymentStatus;
-    method: string | null;
-    transactionId: string | null;
+    createdAt: string;
+    updatedAt: string;
   } | null;
   items: Array<{
     id: string;
@@ -83,15 +83,12 @@ function exportCsv(users: User[]) {
 
 function statusTone(status: OrderStatus) {
   switch (status) {
-    case "DELIVERED":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "CANCELLED":
-    case "REFUNDED":
       return "bg-red-50 text-red-700 border-red-200";
-    case "SHIPPED":
-      return "bg-sky-50 text-sky-700 border-sky-200";
-    default:
+    case "PLACED":
       return "bg-amber-50 text-amber-700 border-amber-200";
+    default:
+      return "bg-zinc-50 text-zinc-700 border-zinc-200";
   }
 }
 

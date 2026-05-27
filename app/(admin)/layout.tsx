@@ -116,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    api.get<{ meta: { total: number } }>("/order?status=PENDING&limit=1")
+    api.get<{ meta: { total: number } }>("/order?status=PLACED&limit=1")
       .then(({ data }) => setPendingCount(data.meta?.total ?? 0))
       .catch(() => {});
   }, [pathname]);

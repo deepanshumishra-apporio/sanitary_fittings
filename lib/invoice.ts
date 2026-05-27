@@ -19,24 +19,21 @@ export function downloadInvoice(order: AdminOrder): void {
     : "";
   const shippingCountry = address?.country ?? "";
   const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const discountAmount = order.items.reduce((s, i) => {
-    const discPct = i.discount ?? 0;
-    return s + (discPct > 0 ? i.price * (discPct / 100) * i.quantity : 0);
-  }, 0);
+  const discountAmount = order.items.reduce((s, i) => s + Math.min(i.discount ?? 0, i.price) * i.quantity, 0);
 
   const itemRows = order.items
     .map((item) => {
-      const discPct = item.discount ?? 0;
-      const unitPrice = discPct > 0 ? item.price * (1 - discPct / 100) : item.price;
+      const unitDiscount = Math.min(item.discount ?? 0, item.price);
+      const unitPrice = item.price - unitDiscount;
       const lineTotal = unitPrice * item.quantity;
-      const discountCell = discPct > 0
-        ? `<span class="discount-badge">${discPct}% off</span><br><span class="dim" style="font-size:11px">−${fmtPrice(item.price * (discPct / 100))}/unit</span>`
+      const discountCell = unitDiscount > 0
+        ? `<span class="discount-badge">Saved</span><br><span class="dim" style="font-size:11px">−${fmtPrice(unitDiscount)}/unit</span>`
         : `<span class="dim">—</span>`;
       return `
         <tr>
           <td class="td-left">${item.product.name}<br><span class="mono dim">${item.productId}</span></td>
           <td class="td-center">${item.quantity}</td>
-          <td class="td-right">${discPct > 0 ? `${fmtPrice(unitPrice)}<br><span class="strike">${fmtPrice(item.price)}</span>` : fmtPrice(item.price)}</td>
+          <td class="td-right">${unitDiscount > 0 ? `${fmtPrice(unitPrice)}<br><span class="strike">${fmtPrice(item.price)}</span>` : fmtPrice(item.price)}</td>
           <td class="td-right">${discountCell}</td>
           <td class="td-right bold">${fmtPrice(lineTotal)}</td>
         </tr>`;
@@ -52,9 +49,7 @@ export function downloadInvoice(order: AdminOrder): void {
     ? `<div class="section" style="margin-top:32px">
         <p class="section-label">Payment</p>
         <p class="info">Status: <strong>${order.payment.status}</strong></p>
-        ${order.payment.method ? `<p class="info">Method: <strong>${order.payment.method}</strong></p>` : ""}
-        ${order.payment.transactionId ? `<p class="info">Transaction ID: <span class="mono">${order.payment.transactionId}</span></p>` : ""}
-        ${order.payment.razorpayOrderId ? `<p class="info">Razorpay Order: <span class="mono">${order.payment.razorpayOrderId}</span></p>` : ""}
+        <p class="info">Amount: <strong>${fmtPrice(order.payment.amount ?? order.totalPrice)}</strong></p>
       </div>`
     : "";
 

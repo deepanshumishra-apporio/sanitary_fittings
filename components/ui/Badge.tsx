@@ -9,13 +9,10 @@ const variantCls: Record<Variant, string> = {
 };
 
 const ORDER_STATUS_VARIANT: Record<string, Variant> = {
-  PENDING: "warning",
-  CONFIRMED: "outline",
-  PROCESSING: "outline",
-  SHIPPED: "default",
-  DELIVERED: "success",
+  PLACED: "warning",
   CANCELLED: "error",
-  REFUNDED: "error",
+  UNPAID: "warning",
+  PAID: "success",
 };
 
 export function OrderStatusBadge({ status }: { status: string }) {

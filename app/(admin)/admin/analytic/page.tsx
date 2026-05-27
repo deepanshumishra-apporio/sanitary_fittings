@@ -114,9 +114,7 @@ function ProductsIcon() {
   );
 }
 
-const STATUS_ORDER: OrderStatus[] = [
-  "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED",
-];
+const STATUS_ORDER: OrderStatus[] = ["PLACED", "CANCELLED"];
 
 const RANGE_LABELS: Record<Range, string> = { today: "Today", "7d": "7 Days", "30d": "30 Days", all: "All Time" };
 
@@ -157,13 +155,13 @@ export default function AnalyticPage() {
   }
 
   const grossRevenue = data.grossRevenue ?? data.totalRevenue;
-  const deliveredRevenue = data.deliveredRevenue ?? 0;
-  const activeOrderValue = data.activeOrderValue ?? 0;
+  const deliveredRevenue = data.deliveredRevenue ?? grossRevenue;
+  const activeOrderValue = data.activeOrderValue ?? grossRevenue;
   const cancelledOrderValue = data.cancelledOrderValue ?? 0;
   const averageOrderValue = data.averageOrderValue ?? (data.totalOrders ? grossRevenue / data.totalOrders : 0);
   const activeOrders = data.activeOrders ?? 0;
-  const completedOrders = data.completedOrders ?? (data.ordersByStatus.DELIVERED ?? 0);
-  const cancelledOrders = data.cancelledOrders ?? ((data.ordersByStatus.CANCELLED ?? 0) + (data.ordersByStatus.REFUNDED ?? 0));
+  const completedOrders = data.completedOrders ?? (data.ordersByStatus.PLACED ?? 0);
+  const cancelledOrders = data.cancelledOrders ?? (data.ordersByStatus.CANCELLED ?? 0);
 
   return (
     <div className="p-6">
@@ -204,11 +202,11 @@ export default function AnalyticPage() {
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.28em] text-zinc-400">Billable Revenue</p>
               <p className="mt-2 text-4xl font-extrabold tracking-tight text-zinc-950">{fmtPrice(grossRevenue)}</p>
               <p className="mt-3 max-w-md text-sm leading-6 text-zinc-500">
-                Calculated from active and delivered orders. Cancelled and refunded values are kept separate.
+                Calculated from placed orders. Cancelled order value is tracked separately.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <RevenueChip label="Delivered" value={fmtPrice(deliveredRevenue)} tone="emerald" />
-                <RevenueChip label="Active" value={fmtPrice(activeOrderValue)} tone="orange" />
+                <RevenueChip label="Placed" value={fmtPrice(deliveredRevenue)} tone="emerald" />
+                <RevenueChip label="Open" value={fmtPrice(activeOrderValue)} tone="orange" />
                 <RevenueChip label="Cancelled" value={fmtPrice(cancelledOrderValue)} tone="zinc" />
               </div>
             </div>
@@ -222,10 +220,10 @@ export default function AnalyticPage() {
         </section>
 
         <section className="border border-zinc-100 bg-white shadow-sm">
-          <PanelHeader title="Order Flow" subtitle={`${activeOrders} active, ${completedOrders} delivered`} />
+          <PanelHeader title="Order Flow" subtitle={`${activeOrders} placed, ${cancelledOrders} cancelled`} />
           <div className="grid grid-cols-3 gap-px bg-zinc-100 border-b border-zinc-100">
-            <MiniStat label="Active" value={activeOrders} />
-            <MiniStat label="Delivered" value={completedOrders} />
+            <MiniStat label="Placed" value={activeOrders} />
+            <MiniStat label="Billable" value={completedOrders} />
             <MiniStat label="Closed" value={cancelledOrders} />
           </div>
           <div className="space-y-3 p-5">

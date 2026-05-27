@@ -1,6 +1,6 @@
 export type Role = "CUSTOMER" | "ADMIN" | "SUBADMIN";
-export type OrderStatus = "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
-export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+export type OrderStatus = "PLACED" | "CANCELLED";
+export type PaymentStatus = "UNPAID" | "PAID";
 
 export interface Category {
   id: string;
@@ -71,7 +71,7 @@ export interface Address {
 export interface Order {
   id: string;
   userId: string;
-  addressId: string;
+  addressId: string | null;
   totalPrice: number;
   discount: number;
   status: OrderStatus;
@@ -81,13 +81,10 @@ export interface Order {
   address: Address | null;
   payment: {
     id: string;
-    amount?: number;
+    amount: number;
     status: PaymentStatus;
-    method: string | null;
-    razorpayOrderId?: string | null;
-    transactionId: string | null;
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt: string;
+    updatedAt: string;
   } | null;
 }
 

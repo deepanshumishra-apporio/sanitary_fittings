@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { fmtPrice, fmtDate } from "@/lib/format";
-import type { Order, OrderStatus, PaginatedMeta } from "@/lib/types";
+import type { Order, OrderStatus, PaginatedMeta, PaymentStatus } from "@/lib/types";
 import { OrderStatusBadge } from "@/components/ui/Badge";
 import AdminTable from "@/components/admin/AdminTable";
 import Pagination from "@/components/admin/Pagination";
@@ -18,17 +18,8 @@ interface AdminOrder extends Order {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ALL_STATUSES: OrderStatus[] = [
-  "PENDING", "CONFIRMED", "PROCESSING",
-  "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED",
-];
-
-const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
-  PENDING: "CONFIRMED",
-  CONFIRMED: "PROCESSING",
-  PROCESSING: "SHIPPED",
-  SHIPPED: "DELIVERED",
-};
+const ALL_STATUSES: OrderStatus[] = ["PLACED", "CANCELLED"];
+const PAYMENT_STATUSES: PaymentStatus[] = ["UNPAID", "PAID"];
 
 const COLUMNS = ["Order ID", "Customer", "Amount", "Status", "Date", "Action", ""];
 
@@ -44,6 +35,7 @@ export default function OrderPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [detailTarget, setDetailTarget] = useState<AdminOrder | null>(null);
   const [statusDraft, setStatusDraft] = useState<Record<string, OrderStatus>>({});
+  const [paymentDraft, setPaymentDraft] = useState<Record<string, PaymentStatus>>({});
   const [showDrawer, setShowDrawer] = useState(false);
   const [dateRange, setDateRange] = useState<"all" | "today" | "7d" | "30d">("all");
 
@@ -77,18 +69,6 @@ export default function OrderPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  async function advanceStatus(orderId: string, next: OrderStatus) {
-    setUpdating(orderId);
-    try {
-      await api.patch(`/order/${orderId}/status`, { status: next });
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: next } : o)));
-    } catch {
-      setError("Failed to update status");
-    } finally {
-      setUpdating(null);
-    }
-  }
-
   async function applyStatusDraft(orderId: string) {
     const newStatus = statusDraft[orderId];
     if (!newStatus) return;
@@ -96,8 +76,55 @@ export default function OrderPage() {
     try {
       await api.patch(`/order/${orderId}/status`, { status: newStatus });
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+      setDetailTarget((prev) => (
+        prev && prev.id === orderId ? { ...prev, status: newStatus } : prev
+      ));
     } catch {
       setError("Failed to update status");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  async function applyStatusDraftWithValue(orderId: string, newStatus: OrderStatus) {
+    setUpdating(orderId);
+    try {
+      await api.patch(`/order/${orderId}/status`, { status: newStatus });
+      setStatusDraft((prev) => ({ ...prev, [orderId]: newStatus }));
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+      setDetailTarget((prev) => (
+        prev && prev.id === orderId ? { ...prev, status: newStatus } : prev
+      ));
+    } catch {
+      setError("Failed to update status");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  async function applyPaymentDraft(orderId: string) {
+    const newStatus = paymentDraft[orderId];
+    if (!newStatus) return;
+    setUpdating(orderId);
+    try {
+      await api.patch(`/order/${orderId}/payment-status`, { status: newStatus });
+      setOrders((prev) => prev.map((o) => (
+        o.id === orderId
+          ? {
+              ...o,
+              payment: o.payment
+                ? { ...o.payment, status: newStatus }
+                : null,
+            }
+          : o
+      )));
+      setDetailTarget((prev) => (
+        prev && prev.id === orderId && prev.payment
+          ? { ...prev, payment: { ...prev.payment, status: newStatus } }
+          : prev
+      ));
+    } catch {
+      setError("Failed to update payment status");
     } finally {
       setUpdating(null);
     }
@@ -134,10 +161,13 @@ export default function OrderPage() {
         <OrderDetailDrawer
           order={detailTarget}
           statusDraft={statusDraft}
+          paymentDraft={paymentDraft}
           updating={updating}
           onClose={() => setDetailTarget(null)}
           onStatusDraftChange={(id, s) => setStatusDraft((prev) => ({ ...prev, [id]: s }))}
+          onPaymentDraftChange={(id, s) => setPaymentDraft((prev) => ({ ...prev, [id]: s }))}
           onApplyStatus={applyStatusDraft}
+          onApplyPaymentStatus={applyPaymentDraft}
         />
       )}
 
@@ -221,7 +251,6 @@ export default function OrderPage() {
             {/* ── Mobile cards (< md) ───────────────────────── */}
             <div className="space-y-3 md:hidden">
               {orders.map((o) => {
-                const next = NEXT_STATUS[o.status];
                 const itemCount = o.items.reduce((s, i) => s + i.quantity, 0);
                 const customerName = o.user?.name ?? o.address?.name ?? "—";
                 return (
@@ -244,13 +273,13 @@ export default function OrderPage() {
 
                     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-50 px-4 py-3">
                       <OrderStatusBadge status={o.status} />
-                      {next && (
+                      {o.status === "PLACED" && (
                         <button
                           disabled={updating === o.id}
-                          onClick={() => advanceStatus(o.id, next)}
+                          onClick={() => applyStatusDraftWithValue(o.id, "CANCELLED")}
                           className="bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-orange-600 transition-colors hover:bg-orange-500 hover:text-white disabled:opacity-40"
                         >
-                          {updating === o.id ? "…" : `→ ${next.charAt(0) + next.slice(1).toLowerCase()}`}
+                          {updating === o.id ? "…" : "Cancel"}
                         </button>
                       )}
                       <button
@@ -271,7 +300,6 @@ export default function OrderPage() {
             <div className="hidden md:block">
               <AdminTable columns={COLUMNS} isEmpty={false} empty="">
                 {orders.map((o) => {
-                  const next = NEXT_STATUS[o.status];
                   const itemCount = o.items.reduce((s, i) => s + i.quantity, 0);
                   const customerName = o.user?.name ?? o.address?.name ?? "—";
                   const customerEmail = o.user?.email ?? "—";
@@ -303,18 +331,16 @@ export default function OrderPage() {
                           <div className="mt-0.5 text-xs text-zinc-400">Upd. {fmtDate(o.updatedAt)}</div>
                         </td>
                         <td className="px-5 py-4">
-                          {next ? (
+                          {o.status === "PLACED" ? (
                             <button
                               disabled={updating === o.id}
-                              onClick={() => advanceStatus(o.id, next)}
+                              onClick={() => applyStatusDraftWithValue(o.id, "CANCELLED")}
                               className="whitespace-nowrap bg-orange-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-orange-600 transition-colors hover:bg-orange-500 hover:text-white disabled:opacity-40"
                             >
-                              {updating === o.id
-                                ? "…"
-                                : `→ ${next.charAt(0) + next.slice(1).toLowerCase()}`}
+                              {updating === o.id ? "…" : "Cancel"}
                             </button>
                           ) : (
-                            <span className="text-xs text-zinc-300">—</span>
+                            <span className="text-xs text-zinc-300">Closed</span>
                           )}
                         </td>
                         <td className="px-5 py-4">
@@ -345,27 +371,36 @@ export default function OrderPage() {
 interface OrderDetailProps {
   o: AdminOrder;
   statusDraft: Record<string, OrderStatus>;
+  paymentDraft: Record<string, PaymentStatus>;
   updating: string | null;
   onStatusDraftChange: (id: string, s: OrderStatus) => void;
+  onPaymentDraftChange: (id: string, s: PaymentStatus) => void;
   onApplyStatus: (id: string) => void;
+  onApplyPaymentStatus: (id: string) => void;
 }
 
 interface OrderDetailDrawerProps {
   order: AdminOrder;
   statusDraft: Record<string, OrderStatus>;
+  paymentDraft: Record<string, PaymentStatus>;
   updating: string | null;
   onClose: () => void;
   onStatusDraftChange: (id: string, s: OrderStatus) => void;
+  onPaymentDraftChange: (id: string, s: PaymentStatus) => void;
   onApplyStatus: (id: string) => void;
+  onApplyPaymentStatus: (id: string) => void;
 }
 
 function OrderDetailDrawer({
   order,
   statusDraft,
+  paymentDraft,
   updating,
   onClose,
   onStatusDraftChange,
+  onPaymentDraftChange,
   onApplyStatus,
+  onApplyPaymentStatus,
 }: OrderDetailDrawerProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -398,9 +433,12 @@ function OrderDetailDrawer({
           <OrderDetail
             o={order}
             statusDraft={statusDraft}
+            paymentDraft={paymentDraft}
             updating={updating}
             onStatusDraftChange={onStatusDraftChange}
+            onPaymentDraftChange={onPaymentDraftChange}
             onApplyStatus={onApplyStatus}
+            onApplyPaymentStatus={onApplyPaymentStatus}
           />
         </div>
       </div>
@@ -408,16 +446,23 @@ function OrderDetailDrawer({
   );
 }
 
-function OrderDetail({ o, statusDraft, updating, onStatusDraftChange, onApplyStatus }: OrderDetailProps) {
+function OrderDetail({
+  o,
+  statusDraft,
+  paymentDraft,
+  updating,
+  onStatusDraftChange,
+  onPaymentDraftChange,
+  onApplyStatus,
+  onApplyPaymentStatus,
+}: OrderDetailProps) {
   const subtotal = o.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const totalDiscount = o.items.reduce((s, i) => {
-    const pct = i.discount ?? 0;
-    return s + (pct > 0 ? i.price * (pct / 100) * i.quantity : 0);
-  }, 0);
+  const totalDiscount = o.items.reduce((s, i) => s + Math.min(i.discount ?? 0, i.price) * i.quantity, 0);
   const itemCount = o.items.reduce((s, i) => s + i.quantity, 0);
   const customerName = o.user?.name ?? o.address?.name ?? "—";
   const customerEmail = o.user?.email ?? "—";
   const currentDraft = statusDraft[o.id] ?? o.status;
+  const currentPaymentDraft = paymentDraft[o.id] ?? o.payment?.status ?? "UNPAID";
 
   return (
     <div className="bg-white">
@@ -518,8 +563,8 @@ function OrderDetail({ o, statusDraft, updating, onStatusDraftChange, onApplySta
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {o.items.map((item) => {
-                  const discPct = item.discount ?? 0;
-                  const unitPrice = discPct > 0 ? item.price * (1 - discPct / 100) : item.price;
+                  const unitDiscount = Math.min(item.discount ?? 0, item.price);
+                  const unitPrice = item.price - unitDiscount;
                   return (
                     <tr key={item.id}>
                       <td className="px-3 py-2.5">
@@ -532,7 +577,7 @@ function OrderDetail({ o, statusDraft, updating, onStatusDraftChange, onApplySta
                       </td>
                       <td className="px-3 py-2.5 text-center font-semibold text-zinc-700">{item.quantity}</td>
                       <td className="px-3 py-2.5 text-right text-zinc-500">
-                        {discPct > 0 ? (
+                        {unitDiscount > 0 ? (
                           <span>
                             {fmtPrice(unitPrice)}
                             <span className="ml-1 text-[10px] text-zinc-400 line-through">{fmtPrice(item.price)}</span>
@@ -540,8 +585,8 @@ function OrderDetail({ o, statusDraft, updating, onStatusDraftChange, onApplySta
                         ) : fmtPrice(item.price)}
                       </td>
                       <td className="px-3 py-2.5 text-right">
-                        {discPct > 0
-                          ? <span className="text-xs font-semibold text-green-600">{discPct}% off</span>
+                        {unitDiscount > 0
+                          ? <span className="text-xs font-semibold text-green-600">−{fmtPrice(unitDiscount)}</span>
                           : <span className="text-xs text-zinc-300">—</span>}
                       </td>
                       <td className="px-3 py-2.5 text-right font-bold text-zinc-900">{fmtPrice(unitPrice * item.quantity)}</td>
@@ -559,10 +604,30 @@ function OrderDetail({ o, statusDraft, updating, onStatusDraftChange, onApplySta
             <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Payment</p>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-1">
               <Detail label="Status" value={o.payment?.status ?? "—"} />
-              <Detail label="Method" value={o.payment?.method ?? "—"} />
               <Detail label="Amount" value={o.payment?.amount !== undefined ? fmtPrice(o.payment.amount) : "—"} strong />
-              <Detail label="Transaction" value={o.payment?.transactionId ?? "—"} mono compact />
             </dl>
+            <div className="mt-4 pt-4 border-t border-zinc-100">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Change Payment</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={currentPaymentDraft}
+                  onChange={(e) => onPaymentDraftChange(o.id, e.target.value as PaymentStatus)}
+                  className="min-w-0 flex-1 border border-zinc-200 bg-white px-2 py-2 text-xs font-semibold text-zinc-700 focus:border-zinc-900 focus:outline-none"
+                >
+                  {PAYMENT_STATUSES.map((s) => (
+                    <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={updating === o.id || currentPaymentDraft === o.payment?.status}
+                  onClick={() => onApplyPaymentStatus(o.id)}
+                  className="shrink-0 bg-zinc-900 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {updating === o.id ? "…" : "Save"}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="p-4">
