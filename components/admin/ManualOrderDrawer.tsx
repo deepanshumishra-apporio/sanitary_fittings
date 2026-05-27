@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { fmtPrice } from "@/lib/format";
 import type { Category, Product } from "@/lib/types";
 
-interface CartEntry {
+interface OrderLine {
   product: Pick<Product, "id" | "name" | "price" | "discount" | "stock" | "images">;
   quantity: number;
 }
@@ -107,7 +107,7 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searching, setSearching] = useState(false);
 
-  const [cart, setCart] = useState<CartEntry[]>([]);
+  const [items, setItems] = useState<OrderLine[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -190,7 +190,7 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
   }
 
   function addProduct(product: Product) {
-    setCart((prev) => {
+    setItems((prev) => {
       const existing = prev.find((e) => e.product.id === product.id);
       if (existing) {
         return prev.map((e) => e.product.id === product.id ? {
@@ -206,17 +206,17 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
 
   function setQty(productId: string, qty: number) {
     if (qty < 1) {
-      setCart((prev) => prev.filter((e) => e.product.id !== productId));
+      setItems((prev) => prev.filter((e) => e.product.id !== productId));
       return;
     }
-    setCart((prev) => prev.map((e) => e.product.id === productId ? {
+    setItems((prev) => prev.map((e) => e.product.id === productId ? {
       ...e,
       quantity: Math.min(qty, e.product.stock),
     } : e));
   }
 
-  const subtotal = cart.reduce((sum, entry) => sum + entry.product.price * entry.quantity, 0);
-  const discountAmount = cart.reduce((sum, entry) => {
+  const subtotal = items.reduce((sum, entry) => sum + entry.product.price * entry.quantity, 0);
+  const discountAmount = items.reduce((sum, entry) => {
     const unitDiscount = Math.min(Math.max(0, entry.product.discount), entry.product.price);
     return sum + unitDiscount * entry.quantity;
   }, 0);
@@ -226,7 +226,7 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
     e.preventDefault();
     setError("");
 
-    if (cart.length === 0) {
+    if (items.length === 0) {
       setError("Add at least one product");
       return;
     }
@@ -261,7 +261,7 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
             country: address.country || "India",
           },
         } : {}),
-        items: cart.map((entry) => ({ productId: entry.product.id, quantity: entry.quantity })),
+        items: items.map((entry) => ({ productId: entry.product.id, quantity: entry.quantity })),
       });
       onCreated();
     } catch (err) {
@@ -438,11 +438,11 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
                 </div>
               )}
 
-              {cart.length === 0 ? (
+              {items.length === 0 ? (
                 <p className="py-4 text-center text-xs text-zinc-400">No products added yet</p>
               ) : (
                 <div className="space-y-2">
-                  {cart.map((entry) => {
+                  {items.map((entry) => {
                     const unitDiscount = Math.min(Math.max(0, entry.product.discount), entry.product.price);
                     const unitPrice = entry.product.price - unitDiscount;
                     return (
@@ -458,7 +458,7 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
                           <button type="button" onClick={() => setQty(entry.product.id, entry.quantity + 1)} disabled={entry.quantity >= entry.product.stock} className="flex h-6 w-6 items-center justify-center border border-zinc-200 text-sm text-zinc-600 hover:border-zinc-900 disabled:opacity-30">+</button>
                         </div>
                         <span className="w-20 text-right text-sm font-bold text-zinc-900">{fmtPrice(unitPrice * entry.quantity)}</span>
-                        <button type="button" onClick={() => setCart((prev) => prev.filter((e) => e.product.id !== entry.product.id))} className="shrink-0 text-zinc-300 hover:text-red-400" aria-label="Remove">
+                        <button type="button" onClick={() => setItems((prev) => prev.filter((e) => e.product.id !== entry.product.id))} className="shrink-0 text-zinc-300 hover:text-red-400" aria-label="Remove">
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
@@ -492,7 +492,7 @@ export default function ManualOrderDrawer({ onClose, onCreated }: Props) {
 
             <div className="flex gap-3">
               <button type="button" onClick={onClose} className="flex-1 border border-zinc-200 py-2.5 text-xs font-semibold uppercase tracking-widest text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900">Cancel</button>
-              <button type="submit" disabled={submitting || cart.length === 0} className="flex-1 bg-orange-500 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">
+              <button type="submit" disabled={submitting || items.length === 0} className="flex-1 bg-orange-500 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40">
                 {submitting ? "Creating..." : "Create Order"}
               </button>
             </div>

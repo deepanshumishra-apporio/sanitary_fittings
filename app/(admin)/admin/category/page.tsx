@@ -33,7 +33,12 @@ export default function CategoryPage() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) =>
-    setCollapsed((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);

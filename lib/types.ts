@@ -25,35 +25,6 @@ export interface Product {
   updatedAt: string;
 }
 
-export interface ProductWithReviews extends Product {
-  reviews: Review[];
-}
-
-export interface Review {
-  id: string;
-  rating: number;
-  comment: string | null;
-  createdAt: string;
-  user: { id: string; name: string | null };
-}
-
-export interface CartItem {
-  id: string;
-  userId: string;
-  productId: string;
-  quantity: number;
-  product: Pick<Product, "id" | "name" | "price" | "discount" | "images" | "stock">;
-}
-
-export interface WishlistItem {
-  id: string;
-  productId: string;
-  createdAt: string;
-  product: Pick<Product, "id" | "name" | "price" | "discount" | "images" | "stock"> & {
-    category: { id: string; name: string };
-  };
-}
-
 export interface Address {
   id: string;
   userId: string;

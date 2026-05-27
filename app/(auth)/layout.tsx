@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchCurrentUser } from "@/store/slices/authSlice";
+import { fetchCurrentUser, logoutUser } from "@/store/slices/authSlice";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,11 +18,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     }
   }, [initialized, dispatch]);
 
-  // Redirect already-authenticated users away from auth pages
   useEffect(() => {
     if (!initialized || !user) return;
-    router.replace(user.role === "ADMIN" || user.role === "SUBADMIN" ? "/admin/analytic" : "/profile");
-  }, [initialized, user, router]);
+    if (user.role === "ADMIN" || user.role === "SUBADMIN") {
+      router.replace("/admin/analytic");
+      return;
+    }
+    dispatch(logoutUser());
+  }, [dispatch, initialized, user, router]);
 
   // Show spinner while we don't yet know the auth state
   if (!initialized) {
@@ -46,17 +49,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 Sanitary Fitted
               </p>
               <h1 className="mt-6 max-w-sm text-4xl font-extrabold tracking-tight">
-                Admin access with a clean, simple sign up flow.
+                Admin access for daily operations.
               </h1>
               <p className="mt-4 max-w-md text-sm leading-6 text-zinc-300">
-                Create your account or sign in to manage orders, products, customers, and team access from one place.
+                Sign in to manage orders, products, customers, and team access from one place.
               </p>
             </div>
             <div className="grid gap-px bg-zinc-800 sm:grid-cols-3">
               {[
                 { label: "Orders", value: "Track" },
                 { label: "Products", value: "Manage" },
-                { label: "Customers", value: "Review" },
+                { label: "Customers", value: "Manage" },
               ].map((item) => (
                 <div key={item.label} className="bg-zinc-900 px-4 py-4">
                   <p className="text-lg font-extrabold text-white">{item.value}</p>

@@ -328,8 +328,6 @@ export default function CustomerPage() {
   const [viewTargetId, setViewTargetId] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchRef = useRef(search);
-  searchRef.current = search;
 
   const fetchUsers = useCallback(async (q: string, pg: number) => {
     setLoading(true);
@@ -358,7 +356,7 @@ export default function CustomerPage() {
 
   function handlePageChange(p: number) {
     setPage(p);
-    fetchUsers(searchRef.current, p);
+    fetchUsers(search, p);
   }
 
   function handleEditSaved(updated: User) {

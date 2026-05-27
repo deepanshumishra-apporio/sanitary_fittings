@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import api, { saveAccessToken } from "@/lib/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { SITE_NAME } from "@/lib/theme";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { AppDispatch } from "@/store";
-import { fetchCurrentUser } from "@/store/slices/authSlice";
+import { fetchCurrentUser, logoutUser } from "@/store/slices/authSlice";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -22,8 +21,10 @@ export default function SignInPage() {
   const user = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
-    if (user) router.replace("/profile");
-  }, [user]);
+    if (user?.role === "ADMIN" || user?.role === "SUBADMIN") {
+      router.replace("/admin/analytic");
+    }
+  }, [user, router]);
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -33,7 +34,12 @@ export default function SignInPage() {
       const { data } = await api.post<{ accessToken: string }>("/auth/login", { email, password });
       saveAccessToken(data.accessToken);
       const role = await hydrateSession(dispatch);
-      router.replace(role === "ADMIN" || role === "SUBADMIN" ? "/admin/analytic" : "/profile");
+      if (role === "ADMIN" || role === "SUBADMIN") {
+        router.replace("/admin/analytic");
+      } else {
+        await dispatch(logoutUser());
+        setError("Admin access only.");
+      }
     } catch (err: unknown) {
       setError(extractError(err));
     } finally {
@@ -81,13 +87,6 @@ export default function SignInPage() {
           </div>
         </form>
       </div>
-
-      <p className="mt-6 text-center text-sm text-zinc-500">
-  By signing in, you agree to our{" "}
-  <Link href="/terms" className="font-medium text-zinc-900 underline underline-offset-4">
-    Terms of Service
-  </Link>
-</p>
     </div>
   );
 }

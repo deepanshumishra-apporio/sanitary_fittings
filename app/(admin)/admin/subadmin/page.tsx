@@ -815,7 +815,7 @@ export default function SubadminPage() {
           )}
 
           {roleSearch.trim() && !searchingUsers && roleResults.length === 0 && (
-            <p className="py-6 text-center text-sm text-zinc-400">No users found for "{roleSearch}"</p>
+            <p className="py-6 text-center text-sm text-zinc-400">No users found for &quot;{roleSearch}&quot;</p>
           )}
         </div>
       </div>
